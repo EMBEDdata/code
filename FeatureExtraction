@@ -1,0 +1,73 @@
+% Feature extraction code in MATLAB
+clc;
+close all
+clear;
+
+% File addresses
+load ('E:\NILM Dataset\Results\Apt 1\Events.mat');
+grandEvents = Events;
+fileOrg='E:\NILM Dataset\Apt1_';
+% Parameters
+inc=100;
+cnt=1;
+lastFileNum=11649;
+stop_flag=false;
+temp=[];
+
+% Setting the size of signatures
+dt1=40/60;
+dt2=1;
+sr=60;
+% targetLabel=129;
+
+while ~stop_flag
+    st=(cnt-1)*inc+1;
+    en=cnt*inc;
+    if en<lastFileNum
+        filePath=strcat(fileOrg,num2str(st),'_',num2str(en),'.mat');
+    else
+        filePath=strcat(fileOrg,num2str(st),'_',num2str(lastFileNum),'.mat');
+        stop_flag=true;
+    end
+    load(filePath);
+    
+    % grandEvents=grandEvents(floor(grandEvents(:,2)./100)==targetLabel,:);
+    % for extracting spepcific class
+    pSignal=data.Pa(1,:);
+%     qSignal=data.Qa(1,:)
+    times=data.t_power;
+    
+    
+    % Isolating all the events in each file
+    eventTime=grandEvents(grandEvents(:,end)==cnt,1);
+    tempGrandEvents=grandEvents(grandEvents(:,end)==cnt,:);
+    cnt=cnt+1;
+    
+    ind=[];
+    problems=[];
+    for i=1:size(eventTime,1)
+        ind=find(data.t_power==eventTime(i));
+        if ~isempty(ind)
+            if ind-dt1*sr<0
+                y=[pSignal(1)*ones(1,((dt1*sr+1)-ind)),pSignal(1:ind+dt2*sr)];
+%                 z=[qSignal(1)*ones(1,((dt*sr+1)-ind)),qSignal(1:ind+dt1*sr)];
+            elseif ind+dt2*sr>length(pSignal)
+                y=[pSignal(ind-dt1*sr:end),pSignal(end)*ones(1,dt2*sr-(length(pSignal)-ind))];
+%                 z=[qSignal(1)*ones(1,((dt*sr+1)-ind)),qSignal(1:ind+dt1*sr)];
+            else
+                y=pSignal(ind-dt1*sr:ind+dt2*sr);
+%                 z=[qSignal(1)*ones(1,((dt*sr+1)-ind)),qSignal(1:ind+dt1*sr)];
+            end
+            
+            temp=[temp;y,tempGrandEvents(i,1),tempGrandEvents(i,2),cnt-1];  % z after y
+        else
+            problems=[problems;size(temp,1)+1];
+        end
+    end
+    
+end
+
+
+
+
+
