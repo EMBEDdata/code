@@ -1,0 +1,78 @@
+%%%%%%%%%%%%%%%%%%
+%%% Generalized Likelihood Ratio (GLR) event detection
+%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%
+%%% grandEvent: Contains the timestamp and the associated timeindex of the detected event 
+%%%%%%%%%%%%%%%%
+
+
+clc;
+clear;
+close all;
+
+
+%%%%%%%%%%%%%%%%%% GLR Parameter
+w=15;
+lrThreshold=25;
+changeThr=20;
+med_filt_order=2;
+minVote=10;
+detectWin=210;
+%%%%%%%%%%%%%%%%%%
+
+
+stop_flag=false;
+
+
+%%%%%%%%%%%%%%%%%% Power files directory
+fileOrg='E:\NILM Dataset\Farrokh Calculated Power_60Hz\Rename\Apt1_data';
+%%%%%%%%%%%%%%%%%%
+
+grandEvent=[];
+
+%%%%%%%%%%%%%%%%%% Index of the last power files
+lastFileNum=117;
+%%%%%%%%%%%%%%%%%%
+
+
+cnt=1;
+
+while ~stop_flag
+
+    if cnt<lastFileNum
+        filePath=strcat(fileOrg,' (',num2str(cnt),')','.mat');
+    else
+        filePath=strcat(fileOrg,' (',num2str(lastFileNum),')','.mat');
+        stop_flag=true;
+    end
+    
+    %%%%%%%%%%%%%%%%%% Load power time series data
+    load(filePath);
+    
+    v=data.Pa(1,1:end);
+    t = data.t_power(1:end);
+    ev=[];
+    a=w;
+    
+    for i=1:length(a)
+        events=glrtED(v,w,w,lrThreshold,changeThr,med_filt_order,minVote,detectWin);
+        ev=[ev,events];
+    end
+    
+    
+    grandEvent = [grandEvent; data.t_power(events), cnt*ones(length(events),1)];
+    
+    %%%%%%%%%%%%%%%%% Plot the time-series and the detected events
+    figure;
+    plot(v,'-ko','markersize',1)
+    hold on;
+    plot(events,v(events),'ro','markersize',7);
+    title(cnt)
+    %%%%%%%%%%%%%%%%%
+    
+    cnt=cnt+1;
+    cnt
+    
+end
