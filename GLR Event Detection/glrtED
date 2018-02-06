@@ -1,0 +1,156 @@
+function purEvents=glrtED(signal,w_pre,w_post,lrThreshold,changeThr,med_filt_order,minVote,detectWin,sigma)
+
+
+% This is a function which gets a signal time series and returns the
+% indicies of the points with an event
+% signal is the vector of the signal time series
+% w_pre is the pre event window
+% w_post is the post event window
+% lrThreshold is the threshold for detecting events
+% changeThr is the threshold for ignoring the shnage in signal
+
+% Compute the likelihood ratio for each point with the proper event pre
+% and post window settings
+
+dynamic_sigma=false;
+if nargin<9
+    dynamic_sigma=true;
+end
+
+if nargin<8
+    detectWin=50; 
+end
+
+if nargin<7
+   minVote=0;
+end
+
+if nargin<6
+    med_filt_order=0;
+end
+
+s=signal;
+N = length(s);
+
+% Apply a median filter to the signal
+if med_filt_order > 0
+    s = medfilt1(s, med_filt_order);
+end
+
+delta=zeros(1,N-(w_pre + w_post));
+u0 = zeros(1,N-(w_pre + w_post));
+u1 = zeros(1,N-(w_pre + w_post));
+sigma0 = zeros(1,N-(w_pre + w_post));
+sigma1 = zeros(1,N-(w_pre + w_post));
+j = w_pre+1; % Keeps track of current point.
+
+u0(1) = mean(s(1:w_pre)); % Initial mean of pre window
+u1(1) = mean(s(j+1:j+w_post)); % Initial mean of  post window
+
+sigma0(1) = std(s(1:w_pre));
+sigma1(1) = std(s(j+1:j+w_post));
+
+for i = 2:N-(w_post + w_pre) % Total number of points that can be processed
+    j = j+1;
+    
+    % Compute means incrementally
+    u0(i) = u0(i-1) - (s(i-1) - s(j-1))/w_pre;
+    u1(i) = u1(i-1) - (s(j) - s(j+w_post))/w_post;
+    
+    % Compute variance
+    sigma0(i) = std(s(i:j-1));
+    sigma1(i) = std(s(j+1:j+w_post));
+    
+    delta(i) = s(i+1)-s(i-1);
+    
+    if mod(i,100000)==0 % STATUS MESSAGE
+        disp(['LLR Iteration ' num2str(i) ' of ' num2str(N)]);
+    end
+end
+
+% Compute pdf value for each point in signal, based on before and after
+% windows.
+if ~dynamic_sigma
+    temp1=ones(1,length(sigma0));
+    sigma0=sigma*temp1;
+    sigma1=sigma*temp1;
+end
+s_eval = s(w_pre+1:N-w_post);
+pu0 = exp(-0.5 * ((s_eval - u0)./sigma0).^2) ./ (sqrt(2*pi) .* sigma0);
+pu1 = exp(-0.5 * ((s_eval - u1)./sigma1).^2) ./ (sqrt(2*pi) .* sigma1);
+
+% Calculate log likelihood ratio. Include eps to prevent division by
+% zero and similar issues.
+ratio = log((pu1+eps)./(pu0+eps));
+ratio((abs(u1-u0) < changeThr)) = 0;
+%ratio((abs(delta) < changeThr)) = 0;
+ratio=abs(ratio);
+%****************************************************************
+if minVote>0
+    ratio = [zeros(1,w_pre) ratio zeros(1, w_post)];
+    votes = zeros(1,length(ratio)-detectWin+1);
+    
+    for i = 1:length(votes)
+        
+        [value,v] = max(ratio(i:i+detectWin-1));
+        if value == 0 
+            v = 0;
+        end
+        if v > 0
+            votes(i) = v+i-1; % This line gives the vote to same overall index by using i index; so the number of votes is determined using the histogram
+        end
+    end
+    
+     histogram = [unique(votes(votes>0)); hist(votes(votes>0), unique(votes(votes>0)))];
+    
+    if isempty(histogram)
+        events = [];
+        purEvents=[];
+        return;
+    end
+    % Events are those that received more than or equal to minVotes
+    events = histogram(1,histogram(2,:)>=minVote);
+    purEvents=events;
+else
+    %****************************************************************
+    % The events are detected based on the decision statistic threshold
+    temp=(ratio>lrThreshold);
+    events=find(temp);
+    
+    
+    % Finding the event with maximum likliehood
+    purEvents=[];
+    tempWin=[];
+    for i=1:length(events)-1
+        if events(i+1)-events(i)==1
+            temp=[events(i),ratio(events(i))];
+            tempWin=[tempWin;temp];
+            temp=[events(i+1),ratio(events(i+1))];
+            tempWin=[tempWin;temp];
+        else
+            if ~isempty(tempWin)
+                tempEv=tempWin(tempWin(:,2)==max(tempWin(:,2)),1)';
+                if length(tempEv>1)
+                    tempEv=tempEv(end);
+                end
+                %purEvents=[purEvents,tempWin(tempWin(:,2)==max(tempWin(:,2)),1)'];
+                purEvents=[purEvents,tempEv];
+                purEvents=unique(purEvents);
+            else
+                purEvents=[purEvents,events(i)];
+            end
+            tempWin=[];
+        end
+        
+    end
+    if ~isempty(tempWin)
+        tempEv=tempWin(tempWin(:,2)==max(tempWin(:,2)),1)';
+        if length(tempEv>1)
+            tempEv=tempEv(end);
+        end
+        %purEvents=[purEvents,tempWin(tempWin(:,2)==max(tempWin(:,2)),1)'];
+        purEvents=[purEvents,tempEv];
+        purEvents=unique(purEvents);
+    end
+end
+end
