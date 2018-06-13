@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%%%%%%%%%%%%%%%%%%%% data: the feature vector (last column is the label)
+%%%%%%%%%%%%%%%%%%%%%% data: the feature vector file (last column is the label)
 load data;
 %%%%%%%%%%%%%%%%%%%%%
 
@@ -15,7 +15,7 @@ data(data(:,end-1)==lbl,:)=[];
 %%%%%%%%%%%%%%%%%%%%%
 
 %%
-%%%%%%%%%%%%%%%%%%%%% Plotting appliance signature 
+%%%%%%%%%%%%%%%%%%%%% Plotting all the appliance signature (feature vectors) 
 n = 8;
 startVec = 1;
 endVec = 202;
@@ -52,19 +52,6 @@ for i=1:size(temp,1)
     close;
 end
 
-%% 
-%%%%%%%%%%%%%%%%%%%%% KNN Classification
-lbl=14001;
-k=4;
-sth=data(data(:,end-1)==lbl,:);
-data(data(:,end-1)==lbl,:)=[];
-grandClus = data;
-[sth,label] = knnFunc(grandClus,sth,k);
-
-modeLbl = mode(sth(:,206:206+k-1),2);
-%% adding KNN result
-
-data=[data;temp];
 
 %% 
 %%%%%%%%%%%%%%%%%%%%% Counting the observations of different labels
