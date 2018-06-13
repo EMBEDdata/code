@@ -1,0 +1,90 @@
+%%%%%%%%%%%%%%%%%
+%%%%%% This is the code for processing and labeling the actual clusters
+%%%%%%%%%%%%%%%%%
+
+function clusterPlot_v2(grandClus,n,vecSt,vecEnd,vecMid)
+
+%%%%%%%%%%%%%%%%% Description of variables
+% grandClus is the feature vectors
+% n (optional) is the number of columns in the subplots (default n = 8)
+% vecSt (optional) the begining of the feature vector (default vecSt = 1)
+% vecEnd (optional) the end of the feature vector (default vecEnd = 101)
+% vecMid (optional) the middle of the feature vector (default vecMid = 41)
+%%%%%%%%%%%%%%%%%
+
+
+
+% The right side could be either sigLib, sigLibOn, or sigLibOff
+sigLib=grandClus(:,1:end);
+
+if nargin<3
+    vecEnd=101;
+    vecMid=41;
+    vecSt=1;
+end    
+   
+if nargin<2
+    vecEnd=101;
+    vecMid=41;
+    vecSt=1;
+    n=8; % number of columns
+end
+
+
+% Subplot input values
+oneClass_flag=0;
+load_flag=0;
+
+if load_flag
+    % Load signature library
+    filePath='C:\Apt Processed Data\FT.mat';
+    load(filePath);
+    % Load label array
+    filePath='C:\Users\nilmusc\Dropbox\Phase_B_Labels.mat';
+    load(filePath);
+    sigLib=[sigLib,labels_B_r2'];
+end
+% sigLib=sigLib_Phase_A_On(:,1:end-1);
+% Determining unique labels
+labels=unique(sigLib(:,end));
+
+% Finding the associated class label with a cluster label
+classLabels=[];
+for i=1:length(labels)
+    temp=sigLib(sigLib(:,end)==labels(i),end-1);
+    classLabels=[classLabels,mode(temp)];
+end
+% End of finding the class labels for cluster labels
+
+m=ceil(length(labels)/n);
+if oneClass_flag
+    tempSig=sigLib(sigLib(:,end)==class,1:101);
+    subplot(1,2,1);
+    plot(tempSig');
+    subplot(1,2,2);
+    plot(median(tempSig));
+else
+    
+    rCnt=0;
+    cCnt=1;
+    set(0,'DefaultFigureWindowStyle','docked');
+    for i=1:length(labels)
+        tempSig=sigLib(sigLib(:,end)==labels(i),vecSt:vecEnd);
+        pos=rCnt*n+cCnt;
+        subplot(m,n,pos);
+
+        plot(tempSig');
+        xlim([1 vecEnd-vecSt]);
+        set(gca,'xtick',[0,vecMid,vecEnd])
+        set(gca,'XGrid','on','YGrid','off','XMinorGrid','off');
+        title(num2str(labels(i)))
+
+        cCnt=cCnt+1;
+        if mod(cCnt,n+1)==0
+            rCnt=rCnt+1;
+            cCnt=1;
+        end
+   end
+end
+
+end

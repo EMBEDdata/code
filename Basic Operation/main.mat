@@ -1,0 +1,75 @@
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% The code performs several basic operations for manipulation and analysis of the data
+%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%% data: the feature vector (last column is the label)
+load data;
+%%%%%%%%%%%%%%%%%%%%%
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%% Removing the instances of a label from data
+lbl = 12001; % removed label
+data(data(:,end-1)==lbl,:)=[];
+%%%%%%%%%%%%%%%%%%%%%
+
+%%
+%%%%%%%%%%%%%%%%%%%%% Plotting appliance signature 
+n = 8;
+startVec = 1;
+endVec = 202;
+midVec = 41;
+clusterPlot_v2(data(:,1:end-1),n,startVec,endVec,midVec)
+%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%% Plotting only one label
+
+lbl = 12901; % plotting a specific label appliance signature
+n = 1;
+startVec = 1;
+endVec = 202;
+midVec = 41;
+clusterPlot_v2(data(data(:,end-1)==lbl,1:end-1),n,startVec,endVec,midVec)
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%% Plotting the observation and event location of a specific label appliance signature
+targetLbl = 12001;
+temp= data(data(:,end-1)==targetLbl,:);
+x=[1:202];
+
+for i=1:size(temp,1)
+    figure;
+    plot(x, temp(i,1:202));
+    hold on
+    plot(41,temp(i,41),'rO')
+    title(i);
+    input('enter');
+    close;
+end
+
+%% 
+%%%%%%%%%%%%%%%%%%%%% KNN Classification
+lbl=14001;
+k=4;
+sth=data(data(:,end-1)==lbl,:);
+data(data(:,end-1)==lbl,:)=[];
+grandClus = data;
+[sth,label] = knnFunc(grandClus,sth,k);
+
+modeLbl = mode(sth(:,206:206+k-1),2);
+%% adding KNN result
+
+data=[data;temp];
+
+%% 
+%%%%%%%%%%%%%%%%%%%%% Counting the observations of different labels
+lbl1 = 14701; % label 1
+lbl2 = 14702; % label 2
+
+[cnt1,cnt2] = countLbl(data, lbl1, lbl2)
+

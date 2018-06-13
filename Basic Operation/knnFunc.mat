@@ -1,0 +1,9 @@
+%%%%%%%%%%%%%%%%%%
+%%%% KNN function
+%%%%%%%%%%%%%%%%%%
+
+function [sth, label] = knnFunc(grandClus,sth,k)
+[Idx,D] = knnsearch(grandClus(:,1:101),sth(:,1:101),'Distance','euclidean','k',k);
+label=grandClus(Idx,end-1);
+label = reshape(label,[size(sth,1),k])
+sth=[sth,label];

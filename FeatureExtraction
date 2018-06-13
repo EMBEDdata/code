@@ -1,0 +1,82 @@
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%% This code is used for feature extraction to create appliance signature
+%%%%%%% FT: Contains the feature vectors
+%%%%%%%%%%%%%%%%%%%%
+
+
+clc;
+close all
+clear;
+
+%%%%%%%%%%%%%%%%%%%% Event file directory
+load ('E:\NILM Dataset\Results\Apt 1\Events.mat');
+%%%%%%%%%%%%%%%%%%%%
+
+grandEvents = Events;
+
+%%%%%%%%%%%%%%%%%%%% Power files directory
+fileOrg='E:\EMBED Data\Apt 1\Apt1_data';
+%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%% Parameters
+cnt=1;
+lastFileNum=117; % Index number of last file
+stop_flag=false;
+FT=[];
+%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%% Setting the size of signatures
+dt1=40/60;
+dt2=1;
+sr=60;
+%%%%%%%%%%%%%%%%%%%%
+
+while ~stop_flag
+
+    if en<lastFileNum
+        filePath=strcat(fileOrg,' (',num2str(cnt),')','.mat');
+    else
+        filePath=strcat(fileOrg,' (',num2str(lastFileNum),')','.mat');
+        stop_flag=true;
+    end
+    load(filePath);
+    
+
+    pSignal=data.Pa(1,:);
+    times=data.t_power;
+    
+    
+    %%%%%%%%%%%%%%%%%%%% Isolating all the events in each file
+    eventTime=grandEvents(grandEvents(:,end)==cnt,1);
+    tempGrandEvents=grandEvents(grandEvents(:,end)==cnt,:);
+    cnt=cnt+1;
+    
+    ind=[];
+    problems=[];
+    for i=1:size(eventTime,1)
+        ind=find(data.t_power==eventTime(i));
+        if ~isempty(ind)
+            if ind-dt1*sr<0
+                y=[pSignal(1)*ones(1,((dt1*sr+1)-ind)),pSignal(1:ind+dt2*sr)];
+
+            elseif ind+dt2*sr>length(pSignal)
+                y=[pSignal(ind-dt1*sr:end),pSignal(end)*ones(1,dt2*sr-(length(pSignal)-ind))];
+
+            else
+                y=pSignal(ind-dt1*sr:ind+dt2*sr);
+
+            end
+            
+            FT=[FT;y,tempGrandEvents(i,1),tempGrandEvents(i,2),cnt-1];  
+        else
+            problems=[problems;size(FT,1)+1];
+        end
+    end
+    
+end
+
+
+
+
+

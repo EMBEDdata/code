@@ -1,0 +1,13 @@
+%%%%%%%%%%%%%%%%%%%
+%%%%%%%%% Counting the observations for different label
+%%%%%%%%%%%%%%%%%%%
+
+function [cnt1,cnt2] = countLbl(data, lbl1, lbl2)
+if nargin<3
+    cnt2=0;
+else
+    cnt2=size(data(data(:,end-1)==lbl2,:),1);
+end
+temp1=data(data(:,end-1)==lbl1,:);
+cnt1=size(temp1,1);
+end
